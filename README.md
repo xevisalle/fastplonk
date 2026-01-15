@@ -1,9 +1,8 @@
-# PLONK 
-![Build Status](https://github.com/dusk-network/plonk/workflows/Continuous%20integration/badge.svg)
-[![Repository](https://img.shields.io/badge/github-plonk-blueviolet?logo=github)](https://github.com/dusk-network/plonk)
+# fastPLONK 
+[![Repository](https://img.shields.io/badge/github-fastplonk-blueviolet?logo=github)](https://github.com/xevisalle/fastplonk)
 [![Documentation](https://img.shields.io/badge/docs-plonk-blue?logo=rust)](https://docs.rs/dusk-plonk/latest/)
 
-_This is a pure Rust implementation of the PLONK proving system over BLS12-381._
+_This is a customized version of the dusk-plonk library, using BLST for increased performance (work in progress)._
 
 This library contains a modular implementation of KZG10 as the default polynomial commitment scheme. Moreover, it includes custom gates for efficiency purposes. The details on our specific implementation can be found [here](docs/dusk-plonk-specs.pdf). An audit can be found [here](https://github.com/dusk-network/audits).
 
