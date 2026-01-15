@@ -190,9 +190,8 @@ pub(crate) mod alloc {
     };
     #[rustfmt::skip]
     use ::alloc::vec::Vec;
-    use dusk_bls12_381::{
-        multiscalar_mul::msm_variable_base, BlsScalar, G1Affine, G1Projective,
-    };
+    use blst::*;
+    use dusk_bls12_381::{BlsScalar, G1Affine, G1Projective};
     use merlin::Transcript;
     #[cfg(feature = "std")]
     use rayon::prelude::*;
@@ -560,8 +559,57 @@ pub(crate) mod alloc {
             scalars.push(z_three_n);
             points.push(self.t_fourth_comm.0);
 
-            Commitment::from(msm_variable_base(&points, &scalars))
+            // Convert BLS scalars to BLST
+            let mut blst_scalars: Vec<[u8; 32]> =
+                scalars.iter().map(|s| s.to_bytes()).collect();
+            let blst_scalars: Vec<*const u8> =
+                blst_scalars.iter().map(|b| b.as_ptr()).collect();
+
+            // Convert BLS points to BLST
+            let mut blst_points: Vec<blst_p1_affine> = points
+                .iter()
+                .map(|p| blst_p1_affine_from_uncompressed(&p.to_uncompressed()))
+                .collect();
+            let blst_points: Vec<*const blst_p1_affine> =
+                blst_points.iter().map(|p| p as *const _).collect();
+
+            let window_size = 5;
+            let scratch_len = blst_points.len() * (1 << window_size);
+            let mut scratch = vec![0; scratch_len];
+            let mut res = blst_p1::default();
+
+            unsafe {
+                blst_p1s_mult_pippenger(
+                    &mut res,
+                    blst_points.as_ptr(),
+                    blst_points.len(),
+                    blst_scalars.as_ptr(),
+                    256,
+                    scratch.as_mut_ptr(),
+                );
+            }
+
+            Commitment::from(
+                G1Affine::from_uncompressed(&blst_p1_affine_to_uncompressed(
+                    &res,
+                ))
+                .unwrap(),
+            )
         }
+    }
+
+    fn blst_p1_affine_to_uncompressed(p: &blst_p1) -> [u8; 96] {
+        let mut bytes = [0u8; 96];
+        unsafe {
+            blst_p1_serialize(bytes.as_mut_ptr(), p);
+        }
+        bytes
+    }
+
+    fn blst_p1_affine_from_uncompressed(bytes: &[u8; 96]) -> blst_p1_affine {
+        let mut affine = blst_p1_affine::default();
+        unsafe { blst_p1_deserialize(&mut affine, bytes.as_ptr()) };
+        affine
     }
 
     fn compute_first_lagrange_evaluation(

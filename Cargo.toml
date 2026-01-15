@@ -15,6 +15,7 @@ exclude = [
 ]
 
 [dependencies]
+blst = "0.3.16"
 merlin = {version = "3.0", default-features = false}
 rand_core = {version="0.6", default-features=false}
 dusk-bytes = "0.1"
